@@ -4,7 +4,7 @@
 <article>
     <h1>Archive</h1>
     <nav>
-    {% for k in items.keys()|sort %}
+    {% for k in items.keys()|sort(True) %}
         {% if k|length == 4 %}
         <h2><a href="{{k}}/">{{k}}</a></h2>
         {% elif k[0] == '_' %}
@@ -13,7 +13,7 @@
         <h2><a href="{{k[:2]}}/">{{k[4:]}}</a></h2>
         {% endif %}
         <ul>
-		{% for i in items[k] %}
+		{% for i in items[k]|reverse %}
             <li><a href="{{site_root_url}}{{i[0]}}">{{i[1]}}</a></li>
 		{% endfor %}
 		</ul>
