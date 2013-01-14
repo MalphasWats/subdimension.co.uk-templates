@@ -12,6 +12,10 @@
 
 <title>{% block head_title %}{% endblock %} &raquo; subdimension</title>
 
+<link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/default.min.css">
+<script src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
 </head>
 
 <body>
@@ -25,7 +29,7 @@
 		<img src="assets/avatar.png" alt="Mike Watts">
 		
 		<h1>Mike Watts</h1>
-		
+		<p>Never put your face in a bag of angry squirrels</p>
 		
 		<nav>
 	<ul>
@@ -33,19 +37,13 @@
 		<li><a href="http://www.subdimension.co.uk/2011/04/17/projects.html">projects</a></li>
 		<li><a href="http://www.subdimension.co.uk/2011/04/05/about_me.html">about me</a></li>
 		<li class="spacer"><a href="http://www.subdimension.co.uk/archive.html">archive</a></li>
-		<li class="spacer"><a href="http://twitter.com/MalphasWats">twitter</a></li>
-		<li><a href="http://www.facebook.com/MalphasWats">facebook</a></li>
-		<li><a href="http://stackoverflow.com/users/123217/malphaswats">stack overflow</a></li>
-		<li><a href="https://github.com/MalphasWats">github</a></li>
-		<li class="spacer"><form method="post" action="http://system.subdimension.co.uk/electrostatic/search"><input type="text" name="search_string" id="search_string" size="18" value="search" onfocus="this.value='';" onblur="this.value='search';"></form></li>
+		<li class="spacer"><a href="https://github.com/MalphasWats">github</a></li>
+		<li class="bottom_spacer"><form method="post" action="http://system.subdimension.co.uk/electrostatic/search"><input type="text" name="search_string" id="search_string" size="18" value="search" onfocus="this.value='';" onblur="this.value='search';"></form></li>
 	</ul>
 </nav>
 	</aside>
 	
 	<section id="articles">
-	
-	
-	
 	
 	
 		<article>
@@ -58,6 +56,7 @@
 <li>What's the documentation like?</li>
 <li>How cool do the example games look?</li>
 </ol>
+
 <p>basically, #1 and #3 are inversely proportional and #2 is really hit-and-miss.</p>
 <p><a href="https://github.com/ippa/jaws">JawsJs</a> ended up being my choice. It totally fulfilled #1, #2 was good enough that I could work out where to go next and #3 looked pitched at the sort of level I thought I could manage myself!</p>
 <p>I found that I really enjoyed using it. It even became my first contributed repository on GitHub - I implemented A* pathfinding on TileMaps (which I'll probably write about soon).</p>
