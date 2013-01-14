@@ -17,6 +17,413 @@
 <body>
 
 <header>
+<h1>subDimension</h1>
+</header>
+
+<section>
+	<aside>
+		<img src="assets/avatar.png" alt="Mike Watts">
+		
+		<h1>Mike Watts</h1>
+		
+		
+		<nav>
+	<ul>
+		<li><a href="http://www.subdimension.co.uk/">blog</a></li>
+		<li><a href="http://www.subdimension.co.uk/2011/04/17/projects.html">projects</a></li>
+		<li><a href="http://www.subdimension.co.uk/2011/04/05/about_me.html">about me</a></li>
+		<li class="spacer"><a href="http://www.subdimension.co.uk/archive.html">archive</a></li>
+		<li class="spacer"><a href="http://twitter.com/MalphasWats">twitter</a></li>
+		<li><a href="http://www.facebook.com/MalphasWats">facebook</a></li>
+		<li><a href="http://stackoverflow.com/users/123217/malphaswats">stack overflow</a></li>
+		<li><a href="https://github.com/MalphasWats">github</a></li>
+		<li class="spacer"><form method="post" action="http://system.subdimension.co.uk/electrostatic/search"><input type="text" name="search_string" id="search_string" size="18" value="search" onfocus="this.value='';" onblur="this.value='search';"></form></li>
+	</ul>
+</nav>
+	</aside>
+	
+	<section id="articles">
+	
+	
+	
+	
+	
+		<article>
+        <h1>Developing Games in Javascript</h1>
+<p>I was inspired by the <a href="http://www.ludumdare.com/compo/ludum-dare-25/?action=top&amp;cat=Overall">Ludum Dare</a> competition at the beginning of last month. I wanted to make a game!</p>
+<p>Initially I started <strong>working in Python</strong> but sadly the current state of game libraries' OS X compatibility leaves <em>plenty for another post.</em> I thought I'd give Javascript a whirl.</p>
+<p>There are <a href="https://gist.github.com/768272">many, many javascript game libraries</a>. I invented 3 criteria for choosing one in the end:</p>
+<ol>
+<li>Can I understand the code, armed with just my early-2000's knowledge of Javascript?</li>
+<li>What's the documentation like?</li>
+<li>How cool do the example games look?</li>
+</ol>
+<p>basically, #1 and #3 are inversely proportional and #2 is really hit-and-miss.</p>
+<p><a href="https://github.com/ippa/jaws">JawsJs</a> ended up being my choice. It totally fulfilled #1, #2 was good enough that I could work out where to go next and #3 looked pitched at the sort of level I thought I could manage myself!</p>
+<p>I found that I really enjoyed using it. It even became my first contributed repository on GitHub - I implemented A* pathfinding on TileMaps (which I'll probably write about soon).</p>
+<p>My first game is still very much in progress, and it represents the absolute zenith of my artistic abilities, but I'm proud of it:</p>
+<p><a href="http://www.subdimension.co.uk/games/Rouge/">Play 'Rouge' here</a>. It'll get better.</p>
+        
+        <p class="byline">Posted by Mike Watts On Friday, 11 January 2013 @ 10:50 | <a href="http://www.subdimension.co.uk/2013/01/11/Developing_Games_in_Javascript.html">permalink</a></p>
+    </article>
+  
+    <article>
+        <h1>PostgreSQL triggers in plpython</h1>
+<p>I wanted to run a query that inserted rows into table B whenever a new row was added to table A.</p>
+<p>The first step took quite some time. You have to start off by adding the procedural language you wish to use to the database you're working with. I'm happy with Python, so I chose <code>plpython</code>:</p>
+<pre><code>$ psql
+
+# CREATE LANGUAGE plpythonu;
+</code></pre>
+<p>but it didn't like that, I got an error:</p>
+<pre><code>ERROR:  could not access file "$libdir/plpython": No such file or directory
+</code></pre>
+<p>Googling failed me! I couldn't find the answer anywhere. This time, a bit of "aptitude foo" came in useful (I'm running Ubuntu):</p>
+<pre><code>$ aptitude search postgresql
+</code></pre>
+<p>there were a lot of results, but neatly nestled towards the bottom was:</p>
+<pre><code>p   postgresql-plpython-8.4         - PL/Python procedural language for PostgreS
+</code></pre>
+<p>so I installed that:</p>
+<pre><code>$ sudo aptitude install postgresql-plpython-8.4
+</code></pre>
+<p>back to <code>psql</code> and try creating the language again:</p>
+<pre><code># CREATE LANGUAGE plpythonu;
+CREATE LANGUAGE
+</code></pre>
+<p>success!</p>
+<p>Next to create the function that I wanted to use in a trigger, I discovered a useful command in <code>psql</code>:</p>
+<pre><code># \e
+</code></pre>
+<p>this pulls up the environment default editor to make writing queries a little less horrible!</p>
+<pre><code>CREATE FUNCTION unread_trigger()
+RETURNS TRIGGER
+AS $$
+qry = plpy.prepare("""INSERT INTO unread_messages
+                      SELECT m.message_id, s.user_id
+                      FROM messages m
+                      JOIN conversation_subscriptions s
+                        ON s.conversation_id = m.conversation_id
+                      WHERE m.message_id = $1;""", ("INTEGER",))
+res = plpy.execute(qry, (TD['new']['message_id'],))
+$$ LANGUAGE plpythonu;
+</code></pre>
+<p>When you exit the editor and save the temporary file, <code>psql</code> executes the query. I'll explain what's going on here in a minute. Another useful command in <code>psql</code> lists the functions created:</p>
+<pre><code># \df
+</code></pre>
+<p>The next step was to add the function as a trigger to my table:</p>
+<pre><code># CREATE TRIGGER set_unread 
+# AFTER INSERT ON messages 
+# FOR EACH ROW EXECUTE PROCEDURE unread_trigger();
+</code></pre>
+<p>so, every time a row is inserted into the <code>messages</code> table, the <code>unread_trigger()</code> function is called and inserts a new row in the <code>unread_messages</code> table for each user that is subscribed to the conversation that message belongs to. In that function, there is a dictionary called <code>TD</code>, this dictionary holds the various values relevant to the event that triggered the function, it's documented in the <a href="http://www.postgresql.org/docs/8.4/static/plpython-trigger.html">PL/Python PostgreSQL docs</a>.</p>
+<p>The <a href="http://www.postgresql.org/docs/8.4/static/plpython-database.html">PL/Python language includes a module that allows access to the database: <code>plpy</code></a>.</p>
+<p>Finally, I didn't get the function right first time. I couldn't work out an easy way to modify a function, so I ended up <code>DROP</code>ping and re-<code>CREATE</code>ing it:</p>
+<pre><code>DROP TRIGGER set_unread ON messages;
+DROP FUNCTION unread_trigger();
+</code></pre>
+<p>EDIT: I just realised you can use <code>CREATE OR REPLACE FUNCTION ...</code> and it will change the function definition, instead of dropping and re-creating it every time!</p>
+        
+        <p class="byline">Posted by Mike Watts On Wednesday, 19 December 2012 @ 20:43 | <a href="http://www.subdimension.co.uk/2012/12/19/PostgreSQL_triggers_in_plpython.html">permalink</a></p>
+    </article>
+  
+    <article>
+        <h1>PostgreSQL unicode</h1>
+<p>I was having trouble storing unicode strings in my postgresql database.</p>
+<p>DISCLAIMER: I'm still really struggling with Unicode in Python, but I think I got a little closer to understanding today!</p>
+<p>When I installed and configured PostgreSQL for the first time, the default setting for character set was <code>LATIN-1</code>, which is annoying. I kept running into problems saving bookmarks in <a href="https://github.com/MalphasWats/subMarks">subMarks</a> when the page titles had unicode characters in them (the <em>emdash</em> has a lot to answer for).</p>
+<p>In order to fix this, I had to convert my database to <code>UTF-8</code>. You can't actually do this though, instead, you have to create a new database, and dump the data into it. Creating a new <code>UTF-8</code> database is fairly straightforward:</p>
+<pre><code>$ createdb -E UTF8 -T template0 NEW_DB_NAME
+</code></pre>
+<p>I used <a href="http://www.turnkeylinux.org/blog/postgresql-latin1-utf8">some instructions I found for transferring the data</a>, however, I didn't drop the cluster and create a new one - I have other databases running and I really couldn't be bothered with all the hassle, I just created a new database and left the old one where it was. Basically, I did this:</p>
+<pre><code>$ pg_dump --blobs --oids OLD_DB_NAME &gt; OLD_DB_NAME.latin1.sql
+$ pg_dump --blobs --oids --encoding=UTF-8 OLD_DB_NAME &gt; OLD_DB_NAME.utf8.sql
+</code></pre>
+<p>then:</p>
+<pre><code>psql --set ON_ERROR_STOP=on NEW_DB_NAME &lt; OLD_DB_NAME.utf8.sql
+</code></pre>
+<p>That all went fine, but the next step was causing me some serious problems: connecting to the database from my python web app.</p>
+<p>Since I'm running PostgreSQL 8.4, I couldn't specify the <code>client_encoding</code> as part of the DSN, it needs a separate step:</p>
+<pre><code>conn = psycopg2.connect(app.config['DSN'])
+conn.set_client_encoding('UTF8')
+</code></pre>
+<p>But that isn't quite enough. <a href="http://stackoverflow.com/questions/10406135/unicodedecodeerror-ascii-codec-cant-decode-byte-0xd1-in-position-2-ordinal">UTF-8 is not Unicode</a> so Python was getting upset with the encoding of the strings it got from the database.</p>
+<p>My Googlefu was strong at this point though, I discovered the missing piece in a <a href="https://code.djangoproject.com/ticket/5171">bug filing for Django</a>. Adding the line:</p>
+<pre><code>psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
+</code></pre>
+<p>to the top of my database code did the job. You can view the code change in this <a href="https://github.com/MalphasWats/instruments/commit/3fb715946533e047c06104d22b9cc3bb02dad366">commit</a>.</p>
+<p>This got me a little closer to finally <em>getting</em> Python Unicode!</p>
+        
+        <p class="byline">Posted by Mike Watts On Tuesday, 11 December 2012 @ 22:04 | <a href="http://www.subdimension.co.uk/2012/12/11/PostgreSQL_unicode.html">permalink</a></p>
+    </article>
+  
+    <article>
+        <h1>pymysql and the big bad blob</h1>
+<p>or: storing a large file in a mysql blob field with pymysql.</p>
+<p>I have a fun little side project going on at work at the moment, I'm a teacher and we wanted a super-light-weight learning platform for a new <a href="http://en.wikipedia.org/wiki/Blended_learning">Blended Learning</a> pilot that we're running. Something were students could log on, follow a course set by teachers, upload their work and receive marks and feedback on that work.</p>
+<p>I started building this just before I learnt about Flask and Python, so it was originally built with PHP. I quickly realised the errors of my ways and recoded the whole thing early on. BEST DECISION EVER, but that's a whole other story.</p>
+<p>The current Beta version has been running rather nicely, but I'd started to notice an irritating issue with the students uploading files - at first, there was no problem; The courses we'd put up online were fairly trivial and the work being submitted was small and straightforward. As we grew, the work being submitted became more complicated. I noticed that large files could not be uploaded. The limit was ~16Mb. This was a useful number, because it matched a setting in MySQL itself, <a href="http://stackoverflow.com/questions/8062496/how-to-change-max-allowed-packet-size"><code>max_allowed_packet</code></a>. I changed it directly in the <code>my.cnf</code> file and restarted the server. <em>Still No Worky</em>.</p>
+<p>A bit more research pointed to a <a href="https://github.com/petehunt/PyMySQL/issues/43">problem in pymysql</a>:</p>
+<blockquote>
+<p>Here's a patch fixing the issue.</p>
+</blockquote>
+<p>and</p>
+<blockquote>
+<p>Thanks Evax. Rolled your patch into r43.</p>
+</blockquote>
+<p>as far as I can tell, I have the latest version of <code>pymysql</code>, installed via <code>pip</code>. I really didn't feel like trying to install a version directly from GitHub (I know <code>pip</code> can do that for you, but I only have this little live server that people are relying on).</p>
+<p>I <a href="http://stackoverflow.com/questions/13376559/broken-pipe-when-i-try-to-insert-large-blob-with-pymysql">asked about the issue on StackOverflow</a>, I'd seen a similar solution suggested elsewhere, but didn't really know where to start. Marwan's answer was enough to get me started:</p>
+<pre><code>@mod.route('/file/upload', methods=['POST'])
+@login_required
+def upload2():
+    filename = request.files['file'].filename
+    mime_type = request.files['file'].mimetype
+    file = request.files['file'].stream.read()
+
+    if mime_type[:5] == 'image':
+        file = resize_image_to_width(file, 1024)
+
+    filesize = len(file)
+    if filesize == 0:
+        return ""
+
+    chunk_size = 1024 * 1024 * 10 #10 megabytes
+    file_chunks = [file[i:i+chunk_size] for i in range(0, len(file), chunk_size)]
+
+    if not request.form['file_id']:
+        file_details = (filename, file_chunks[0], mime_type, filesize, session['user']['user_id'])
+        file_id = database.query("""INSERT INTO files (filename, file, mime_type, filesize, owner)
+                                    VALUES (%s, %s, %s, %s, %s)""", file_details)
+        for f in file_chunks[1:]:
+            database.query("""UPDATE files 
+                              SET file=concat(file, %s)
+                              WHERE file_id=%s""", (f, file_id))
+    else:
+        file_details = (filename, file, mime_type, filesize, request.form['file_id'])
+
+        file_id = database.query("""UPDATE files 
+                                    SET 
+                                    filename=%s, 
+                                    file=%s, 
+                                    mime_type=%s, 
+                                    filesize=%s 
+                                    WHERE file_id=%s""", file_details)
+    return "upload complete"
+</code></pre>
+<p>My upload function breaks the uploaded file into chunks of 10Mb, inserts the first chunk and appends the remaining chunks to the blob field. I celebrated - it worked!</p>
+<p>Of course, if fat stuff can't go in, fat stuff can't come out! I had to modify my <code>download()</code> function too:</p>
+<pre><code>@mod.route('/file/&lt;int:file_id&gt;/download')
+@login_required
+def download2(file_id):
+    chunk_size = 1024 * 1024 * 10
+    file = database.query("""SELECT SUBSTRING(file, 1, %s) as file, mime_type, filename, filesize FROM files WHERE file_id=%s""", (chunk_size, file_id))
+    if file:
+        file_content = file[0]['file']
+        if file[0]['filesize'] &gt; chunk_size:
+            chunks_left = file[0]['filesize'] / chunk_size #I have 1 chunk, so this will get the remainder, there's almost always one partial chunk left
+
+            for c in range(chunks_left):
+                chunk_start = (chunk_size * (c+1)) + 1
+
+                chunk = database.query("""SELECT SUBSTRING(file, %s, %s) as chunk FROM files WHERE file_id=%s""", (chunk_start, chunk_size, file_id))
+                file_content += chunk[0]['chunk']
+
+        safe_filename = unicode(file[0]['filename']).encode('ascii', 'ignore')
+        r = Response(file_content, mimetype=file[0]['mime_type'])
+        r.headers.add('Content-Disposition', u'attachment; filename="%s"' % safe_filename)
+        return r
+    else:
+        abort(404)
+</code></pre>
+<p>I'm not sure I like the solution I have, it feels inefficient with all the serial queries, but ultimately, it works and gets things moving again with our pilot. I really need to investigate the mysterious patch mentioned in the GitHub issue, but really, there's always going to be a limit to the transaction size, so at least my solution here deals with truly massive files (teachers love uploading videos to things, I'm pretty sure it won't really work, but at least it'll get stored in the database nicely!)</p>
+        
+        <p class="byline">Posted by Mike Watts On Friday, 16 November 2012 @ 11:21 | <a href="http://www.subdimension.co.uk/2012/11/16/pymysql_and_the_big_bad_blob.html">permalink</a></p>
+    </article>
+  
+    <article>
+        <h1>flask, mod_wsgi, ssl, oh my!</h1>
+<p>I wanted to be able to access my <a href="https://github.com/MalphasWats/instruments">instruments</a> control panel via <code>https://</code> as well as <code>http://</code>.</p>
+<p>First, I started off by getting an SSL certificate. I used <a href="https://www.startssl.com">StartSSL</a> which offers a free-tier SSL certificate. Following all of their steps carefully, I ended up with 2 files:</p>
+<ul>
+<li>a private <code>.key</code> file (unencrypted),</li>
+<li>my certificate file* (I had to wait for it to be approved and copied it from the <em>Retrieve Certificate</em> section of the Tool Box).</li>
+</ul>
+<p>* I run instruments on a sub-domain of subdimension.co.uk, the certificate I created was tied to this sub-domain. The paid-tier StartSSL offers allows you to create a wildcard certificate that would work for the whole domain, but I don't need to spend £40 on that.</p>
+<p>I also needed a third file from the StartSSL Tool Box page; in the StartCom CA Certificates section, download a copy of the <em>Class 1 Intermediate Server CA</em> file.</p>
+<p>I uploaded these files onto my server, into a non-web-accessible directory.</p>
+<p>I use Apache, with <code>mod_wsgi</code> to run my flask applications currently. Instruments was already running with the following configuration file:</p>
+<pre><code>&lt;VirtualHost *:80&gt;
+    ServerName instruments.example.com
+
+    WSGIDaemonProcess instruments_t user=user group=www-data umask=0002 threads=5 home=/path/to/instruments
+    WSGIScriptAlias / /path/to/instruments.wsgi
+
+    &lt;Directory /path/to/instruments&gt;
+        WSGIProcessGroup instruments_t
+        WSGIApplicationGroup %{GLOBAL}
+        WSGIScriptReloading On
+        Order deny,allow
+        Allow from all
+    &lt;/Directory&gt;
+&lt;/VirtualHost&gt;
+</code></pre>
+<p>I wasn't sure quite how to go about the next step - I could have just repeated the same thing again, but with <code>&lt;VirtualHost *:443&gt;</code> instead, but I suspected that would create 2 identical applications running at the same time. I wanted 1 application that was accessed via both ports.</p>
+<p><a href="http://blog.dscpl.com.au/2009/08/more-on-those-problems-with-example.html">A blog post from the creator of mod_wsgi</a> helped me out. Although he is talking about <code>web2py</code>, the problem and solution were the same. Simply dropping the <code>WSGIDaemonProcess</code> line and making sure I referenced the same <code>WSGIProcessGroup</code> seemed to be enough.</p>
+<p>My Apache config file became this:</p>
+<pre><code>&lt;VirtualHost *:80&gt;
+    ServerName instruments.example.com
+
+    WSGIDaemonProcess instruments_t user=user group=www-data umask=0002 threads=5 home=/path/to/instruments
+    WSGIScriptAlias / /path/to/instruments.wsgi
+
+    &lt;Directory /path/to/instruments&gt;
+        WSGIProcessGroup instruments_t
+        WSGIApplicationGroup %{GLOBAL}
+        WSGIScriptReloading On
+        Order deny,allow
+        Allow from all
+    &lt;/Directory&gt;
+&lt;/VirtualHost&gt;
+
+&lt;VirtualHost *:443&gt;
+    ServerName instruments.example.com
+
+    WSGIScriptAlias / /path/to/instruments.wsgi
+
+    SSLEngine On
+    SSLCertificateFile /path/to/instruments.example.com.cer
+    SSLCertificateKeyFile /path/to/unencrypted_private.key
+    SSLCertificateChainFile /path/to/sub.class1.server.ca.pem
+
+    &lt;Directory /path/to/instruments&gt;
+        WSGIProcessGroup instruments_t
+        WSGIApplicationGroup %{GLOBAL}
+        WSGIScriptReloading On
+        Order deny,allow
+        Allow from all
+    &lt;/Directory&gt;
+&lt;/VirtualHost&gt;
+</code></pre>
+<p>According to Graham in the post above, this works as long as the <code>ServerName</code> is the same for both, and because <code>mod_wsgi</code> treats the ports :80 and :443 as a special pair.</p>
+<p>Before I could enable the site (and disable the old config file), the SSL module needed to be enabled:</p>
+<pre><code>$ sudo a2enmod ssl
+</code></pre>
+<p>disable the old app:</p>
+<pre><code>$ sudo a2dissite instruments
+</code></pre>
+<p>enable the new one:</p>
+<pre><code>$ sudo a2ensite instruments-ssl
+</code></pre>
+<p>because of the enabling of <code>mod_ssl</code>, apache needs to be restarted, rather than just reloaded:</p>
+<pre><code>$ sudo /etc/init.d/apache2 restart
+</code></pre>
+<p>a quick browser point to <code>https://instruments.example.com</code> and everything appeared to be working! My next task is to rework the instruments app to make sure that it always redirects to the <code>https://</code> site which I'll likely write about separately later.</p>
+<p>Additionally, the main reason I wanted this was so that I could get <a href="https://github.com/MalphasWats/subMarks">subMarks</a> able to bookmark websites that are only accessible via <code>https://</code>. I'll probably write a bit about that too.</p>
+        
+        <p class="byline">Posted by Mike Watts On Saturday, 10 November 2012 @ 21:34 | <a href="http://www.subdimension.co.uk/2012/11/10/flask_modwsgi_ssl_oh_my.html">permalink</a></p>
+    </article>
+  
+    <article>
+        <h1>Introducing Instruments</h1>
+<p>I've been working on Instruments for some time now. Since I first wrote pyDimension, I've bolted on an interface for my web stats tracking app and a custom bookmarking app but it was all done rather clumsily.</p>
+<p>Instruments is a Flask application skeleton that simply provides a login form and authenticates against a database. Functionality, such as a static blog generator or the aforementioned web stats and bookmarking can then be added as 'blueprints' which Instruments will load in at start up.</p>
+<p><a href="https://github.com/MalphasWats/instruments">Instruments is available on GitHub</a></p>
+<p>along with 3 plug-in 'blueprints':</p>
+<ul>
+<li><a href="https://github.com/MalphasWats/pulse">Pulse - Simple Web Stats</a></li>
+<li><a href="https://github.com/MalphasWats/subMarks">subMarks - Bookmarking</a></li>
+<li><a href="https://github.com/MalphasWats/electrostatic">Electrostatic - Static blog generator</a></li>
+</ul>
+<p>Electrostatic is heavily based on my former system <a href="https://github.com/MalphasWats/pyDimension">pyDimension</a>, which is being retired now.</p>
+<p>The primary purpose of Instruments is to provide a single place for login management. It's not quite as robust as I'd like it to be (it's as good as any I've ever made before), but the central codebase means that any improvements I make get reflected everywhere it's used.</p>
+<p>There's still a fair bit to do (documentation!!), but I'm really pleased with it so far.</p>
+        
+        <p class="byline">Posted by Mike Watts On Tuesday, 06 November 2012 @ 12:49 | <a href="http://www.subdimension.co.uk/2012/11/06/Introducing_Instruments.html">permalink</a></p>
+    </article>
+  
+    <article>
+        <h1>Variable method parameter defaults in Python</h1>
+<p><a href="https://github.com/MalphasWats/pulse">Pulse</a> is my very simple web stats tracker. A bit like Google Analytics, but without all the Google (and most of the features). I only really cared about the referrer information; it's nice to know who is linking to you.</p>
+<p>I had a method that looked like this:</p>
+<pre><code>def get_visit_total_between(start_date='2012-08-29', end_date=datetime.date.today().strftime('%Y-%m-%d 23:59:59')):
+# query database for visits between dates.
+</code></pre>
+<p><code>start_date</code> was set to a date just before I created Pulse and in the absence of an end date, it chose the end of the current day. I called it like this:</p>
+<pre><code>today = datetime.date.today()
+visits_today = get_visit_total_between(today.strftime('%Y-%m-%d'))
+</code></pre>
+<p><code>get_visit_total_between()</code> would then use its default value of 'end of today' to work out when the <code>end_date</code> was. At least, that was my intention.</p>
+<p>It's probably well documented, but it's the first time I have come across the issue. The method <code>get_visit_total_between</code> is created when the python module first runs. This method would work fine in almost any other usecase to the one I applied it - running as part of a Flask web app.</p>
+<p>I use <code>mod_wsgi</code> and Apache to run my Flask apps, which means an instance of the app is created when Apache starts up and then left to do its thing, the same bit of Python code can be sat running for weeks. That meant that my default <code>end_date</code> was set to whenever the server was started and never changed again!</p>
+<p>The infuriating thing was that it all worked fine for the rest of the day. Once the clock ticked over to the next day though, my query was looking for dates greater than the beginning of today, but less than yesterday. I was damn lucky not to rip a hole in the space-time continuum or something! Any time I restarted the server, or ran a local development server with debugging stuff spewing out everywhere, everything worked fine again. That was, until the next day, when it all stopped.</p>
+<p>It took me ages to realise that the method was being created at first run with a fixed default value, instead of evaluating that default at each call.</p>
+        
+        <p class="byline">Posted by Mike Watts On Tuesday, 23 October 2012 @ 08:27 | <a href="http://www.subdimension.co.uk/2012/10/23/_Variable_method_parameter_defaults_in_Python.html">permalink</a></p>
+    </article>
+  
+    <article>
+        <h1>loading Flask blueprints dynamically</h1>
+<p>I wanted to be able to add and load plug-ins for a new system I'm working on without knowing what they were called at development time.</p>
+<p>Ultimately, I created a very basic skeleton for doing this here:</p>
+<p><a href="https://github.com/MalphasWats/flask-blueprint-loader">flask-blueprint-loader</a></p>
+<p>I got <a href="https://github.com/smartboyathome/Cheshire-Engine/blob/master/ScoringServer/utils.py">a little help</a> from a project that was doing something similar too.</p>
+<p>Basically, it boils down to using the <a href="http://docs.python.org/library/imp.html">Python imp module</a>, which ends up looking a little like this:</p>
+<pre><code>fp, pathname, description = imp.find_module('my_plugin', ['plugin-folder'])
+print fp, pathname, description
+mod = imp.load_module('my_plugin', fp, pathname, description)
+</code></pre>
+        
+        <p class="byline">Posted by Mike Watts On Monday, 08 October 2012 @ 19:11 | <a href="http://www.subdimension.co.uk/2012/10/08/_loading_Flask_blueprints_dynamically.html">permalink</a></p>
+    </article>
+  
+    <article>
+        <h1>Creating a new instance of a class from an existing instance in Python</h1>
+<p>I've been wasting a lot of time creating a <a href="https://github.com/MalphasWats/sector-7">game in Python</a>.</p>
+<p>I'm sure this isn't news, but it took quite a lot of searching to find <a href="http://stackoverflow.com/questions/5924879/how-to-create-a-new-instance-from-a-class-object-in-python">the answer</a>. I the game I have a <code>tech tree list</code> that holds an instance of each of the buildings that can be built. When you want to build a new one, the game lists these buildings and you choose one.</p>
+<p>It took me ages to work out how to build a new copy of the chosen object. I <strong>didn't</strong> want to have some giant <code>if-elif-else</code> structure that worked it out, I wanted to be able to add new buildings when I thought of them, without worrying about forgetting to update the selector.</p>
+<p>It's actually quite easy, once you know how:</p>
+<pre><code>class MyClass(object):
+    def __init__(self):
+        self.value = 'One'
+
+a = MyClass()
+a.value = 'Two'
+
+c = a.__class__
+
+b = c()
+
+print a.value
+print b.value
+</code></pre>
+<p>documented here so I don't forget.</p>
+        
+        <p class="byline">Posted by Mike Watts On Sunday, 23 September 2012 @ 10:18 | <a href="http://www.subdimension.co.uk/2012/09/23/Creating_a_new_instance_of_a_class_from_an_existing_instance_in_Python.html">permalink</a></p>
+    </article>
+  
+    <article>
+        <h1>Setting the default terminal editor</h1>
+<p>I've been playing around with <a href="http://www.heroku.com">Heroku</a> this week. Heroku uses Git to get code into its little server dynos (Heroku has some of the best jargon).</p>
+<p>I'm not very good with Git yet (I still have SVN in my brain), GitHub is great and I've been mostly using its graphical interface for moving stuff up and down. However, I found myself attempting to commit something at the command line and I forgot the all important <code>-m "commit message"</code> switch. By default I was thrown into the horror that is Vim. I do my text editing in Nano (I'm not really a Geek). I couldn't even work out how to <em>exit</em> vim (apparently you just type <code>quit</code>, but I was in typey mode and couldn't work out how I got into it, or how to get back out of it).</p>
+<p><a href="http://stackoverflow.com/questions/6435246/trouble-on-setting-the-git-core-editor">A bit of search-fu</a> helped me find a way to declare my Nano fealty:</p>
+<pre><code>$ cd ~
+$ nano .bash_profile
+
+export EDITOR="nano"
+</code></pre>
+<p>Restart my terminal. Ahhh, so much better. I did try to work out where Nano actually lives, but I gave up after a few minutes; Nano just Is.</p>
+        
+        <p class="byline">Posted by Mike Watts On Sunday, 02 September 2012 @ 18:12 | <a href="http://www.subdimension.co.uk/2012/09/02/Setting_the_default_terminal_editor.html">permalink</a></p>
+    </article>
+			
+			
+			
+			
+			
+	</section>
+</section>
+
+<!--<header>
 	<h1>subDimension</h1>
 	<p>my place to put things</p>
 </header>
@@ -37,7 +444,7 @@
 
 <section>
 {% block body %}{% endblock %}
-</section>
+</section>-->
 
 </body>
 </html>
