@@ -6,7 +6,7 @@
 
 <link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="http://www.subdimension.co.uk/blog_feed.xml">
 
-<link rel="stylesheet" type="text/css" href="http://www.subdimension.co.uk/templates/subdimension2012/subdimension2012.css">
+<link rel="stylesheet" type="text/css" href="http://www.subdimension.co.uk/templates/subdimension2013/subdimension.css">
 
 <script type="text/javascript" src="http://system.subdimension.co.uk/pulse/a/"></script>
 
@@ -18,26 +18,35 @@
 
 <header>
 	<h1>subDimension</h1>
-	<p>my place to put things</p>
 </header>
 
-<nav>
-	<ul>
-		<li><a href="http://www.subdimension.co.uk/">blog</a></li>
-		<li><a href="http://www.subdimension.co.uk/2011/04/17/projects.html">projects</a></li>
-		<li><a href="http://www.subdimension.co.uk/2011/04/05/about_me.html">about me</a></li>
-		<li class="spacer"><a href="http://www.subdimension.co.uk/archive.html">archive</a></li>
-		<li class="spacer"><a href="http://twitter.com/MalphasWats">twitter</a></li>
-		<li><a href="http://www.facebook.com/MalphasWats">facebook</a></li>
-		<li><a href="http://stackoverflow.com/users/123217/malphaswats">stack overflow</a></li>
-		<li><a href="https://github.com/MalphasWats">github</a></li>
-		<li class="spacer"><form method="post" action="http://system.subdimension.co.uk/electrostatic/search"><input type="text" name="search_string" id="search_string" size="18" value="search" onfocus="this.value='';" onblur="this.value='search';"></form></li>
-	</ul>
-</nav>
-
 <section>
-{% block body %}{% endblock %}
+	<aside>
+		<img src="http://www.subdimension.co.uk/templates/subdimension2013/assets/avatar.png" alt="Mike Watts">
+		
+		<h1>Mike Watts</h1>
+		<p>Never put your face in a bag of angry squirrels.</p>
+		
+		<nav>
+			<ul>
+				<li><a href="http://www.subdimension.co.uk/">blog</a></li>
+				<li><a href="http://www.subdimension.co.uk/2011/04/17/projects.html">projects</a></li>
+				<li><a href="http://www.subdimension.co.uk/2011/04/05/about_me.html">about me</a></li>
+				<li class="spacer"><a href="http://www.subdimension.co.uk/archive.html">archive</a></li>
+				<li class="spacer"><a href="https://github.com/MalphasWats">github</a></li>
+				<li class="bottom_spacer"><form method="post" action="http://system.subdimension.co.uk/electrostatic/search"><input type="text" name="search_string" id="search_string" size="18" value="search" onfocus="this.value='';" onblur="this.value='search';"></form></li>
+			</ul>
+		</nav>
+	</aside>
+	
+	<section id="articles">
+	{% block body %}{% endblock %}
+	</section>
 </section>
+
+<link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/default.min.css">
+<script src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
 
 </body>
 </html>
